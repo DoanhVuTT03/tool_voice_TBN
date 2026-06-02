@@ -278,6 +278,13 @@ class App:
         ttk.Spinbox(cv, from_=1, to=8, increment=1, textvariable=self.var_threads,
                     width=10).grid(row=2, column=1, padx=6, pady=8)
 
+        # Resume: skip lines whose output wav already exists (re-run after a crash
+        # / power loss only generates what's missing). On by default.
+        self.var_resume = tk.BooleanVar(value=True)
+        ttk.Checkbutton(cv, text="Tiep tuc: bo qua cau da co voice (chong mat dien)",
+                        variable=self.var_resume).grid(row=3, column=0, columnspan=3,
+                                                        sticky="w", padx=6, pady=4)
+
         # ----- Batch Job Options -----
         bj = ttk.LabelFrame(self.root, text="Batch Job Options")
         bj.pack(fill="x", padx=8, pady=4)
@@ -617,6 +624,13 @@ class App:
             if self.stop_event.is_set():
                 self.set_row(row["iid"], status="Stopped")
                 return
+            out_path = outdir / f"{row['idx']}.wav"
+            # Resume: a non-empty output already exists -> skip (don't regenerate).
+            if self.var_resume.get() and out_path.exists() and out_path.stat().st_size > 0:
+                self.set_row(row["iid"], status="Da co (bo qua)")
+                self.done_count += 1
+                self.refresh_status()
+                return
             self.pause_event.wait()
             if self.stop_event.is_set():
                 self.set_row(row["iid"], status="Stopped")
@@ -626,9 +640,12 @@ class App:
                 self.set_row(row["iid"], voice=vid, status="Generating...")
                 t0 = time.time()
                 audio = synthesize(session, row["content"], references, speed, pitch)
-                out_path = outdir / f"{row['idx']}.wav"
-                with open(out_path, "wb") as f:
+                # Atomic write: a crash mid-write leaves only a .part file, never a
+                # half-written .wav that resume would mistake for "done".
+                tmp = out_path.parent / (out_path.name + ".part")
+                with open(tmp, "wb") as f:
                     f.write(audio)
+                os.replace(tmp, out_path)
                 dt = time.time() - t0
                 self.set_row(row["iid"], status=f"Done ({dt:.1f}s)")
                 self.done_count += 1

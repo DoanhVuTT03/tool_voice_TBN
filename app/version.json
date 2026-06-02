@@ -1,5 +1,5 @@
 {
-  "app_version": "1.0.0",
+  "app_version": "1.0.1",
   "runtime_version": "1.0.0",
-  "notes": "Phien ban dau tien."
+  "notes": "Them chuc nang Tiep tuc: chay lai file/folder se bo qua cau da co voice (chong mat dien)."
 }
