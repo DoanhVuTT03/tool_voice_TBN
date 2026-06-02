@@ -8,6 +8,7 @@
   "server_host": "127.0.0.1",
   "server_port": 8080,
 
+  "mode": "wsl",
   "wsl_distro": "Ubuntu-22.04",
 
   "model_dir": "models/openaudio-s1-mini",
