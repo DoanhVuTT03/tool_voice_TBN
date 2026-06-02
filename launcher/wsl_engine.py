@@ -94,12 +94,15 @@ def run_bootstrap(scripts_dir, distro, model_base_url, on_line=None):
     return ok and p.returncode == 0
 
 
-def start_server(scripts_dir, distro, port, on_line=None):
-    """Start the WSL server (torch.compile) in the background. Returns the Popen."""
+def start_server(scripts_dir, distro, port):
+    """Start the WSL server (torch.compile) in the background. Returns the Popen.
+    Output is discarded here (the server logs to a file inside WSL) so the
+    server never depends on a Windows pipe that closes when the launcher exits
+    — writing to a closed pipe is what caused '[Errno 32] Broken pipe' 500s."""
     sh = win_to_wsl(os.path.join(scripts_dir, "wsl_run_server.sh"))
     env = dict(os.environ)
     env["WSL_UTF8"] = "1"
     cmd = ["wsl.exe", "-d", distro, "-u", "root", "--", "bash", sh, str(port)]
-    return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            text=True, encoding="utf-8", errors="replace",
-                            env=env, creationflags=CREATE_NO_WINDOW)
+    return subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                            stdin=subprocess.DEVNULL, env=env,
+                            creationflags=CREATE_NO_WINDOW)

@@ -201,17 +201,7 @@ def start_wsl_server_and_wait(sp):
     """Start the WSL --compile server and wait until it answers. Returns True/False."""
     sp.post(msg="Dang khoi dong engine nhanh (compile lan dau ~2-3 phut)...", pct=92, sub="")
     proc = wsl_engine.start_server(SCRIPTS_DIR, DISTRO, PORT)
-
-    def drain():  # surface a few server lines
-        try:
-            for line in iter(proc.stdout.readline, ""):
-                sp.post(sub=line.strip()[:80])
-                if proc.poll() is not None:
-                    break
-        except Exception:
-            pass
-    threading.Thread(target=drain, daemon=True).start()
-
+    # Readiness is detected by polling the port (server logs to a file in WSL).
     for _ in range(160):  # ~5 min
         if port_up(PORT):
             return True
