@@ -1,0 +1,18 @@
+{
+  "app_name": "Tool Voice",
+  "app_id": "ToolVoice",
+
+  "github_owner": "DoanhVuTT03",
+  "github_repo": "tool_voice_TBN",
+
+  "server_host": "127.0.0.1",
+  "server_port": 8080,
+
+  "wsl_distro": "Ubuntu-22.04",
+
+  "model_dir": "models/openaudio-s1-mini",
+  "model_base_url": "https://github.com/DoanhVuTT03/tool_voice_TBN/releases/download/model-v1",
+
+  "python_embed_url": "https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip",
+  "torch_index_url": "https://download.pytorch.org/whl/cu124"
+}

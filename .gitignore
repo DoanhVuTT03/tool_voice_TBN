@@ -1,0 +1,17 @@
+# Build artifacts and downloaded heavy parts — never commit these.
+build_output/
+runtime/
+models/
+*.pth
+*.wav
+
+# Python / PyInstaller
+__pycache__/
+*.pyc
+*.spec
+dist/
+build/
+
+# Local junk
+*.part
+*.bak
