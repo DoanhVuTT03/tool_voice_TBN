@@ -8,6 +8,7 @@ heavy runtime/torch environment exists.
 """
 import os
 import ssl
+import time
 import urllib.request
 
 # The official HF model (fishaudio/openaudio-s1-mini) is GATED (download needs a
@@ -41,19 +42,34 @@ def model_ready(model_dir):
     return all(os.path.exists(os.path.join(model_dir, n)) for n in need)
 
 
-def _download_one(url, dest, on_bytes=None, timeout=60):
+def _download_one(url, dest, on_bytes=None, timeout=120, max_attempts=8):
+    """Resumable, retrying download — a dropped connection on the big model
+    files resumes (HTTP Range) instead of failing the whole install."""
     tmp = dest + ".part"
-    req = urllib.request.Request(url, headers={"User-Agent": "ToolVoice"})
-    with urllib.request.urlopen(req, timeout=timeout, context=_ctx()) as r:
-        with open(tmp, "wb") as f:
-            while True:
-                chunk = r.read(1024 * 512)
-                if not chunk:
-                    break
-                f.write(chunk)
-                if on_bytes:
-                    on_bytes(len(chunk))
-    os.replace(tmp, dest)
+    for attempt in range(1, max_attempts + 1):
+        have = os.path.getsize(tmp) if os.path.exists(tmp) else 0
+        headers = {"User-Agent": "ToolVoice"}
+        if have:
+            headers["Range"] = "bytes=%d-" % have
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=timeout, context=_ctx()) as r:
+                resuming = have > 0 and getattr(r, "status", 200) == 206
+                mode = "ab" if resuming else "wb"
+                with open(tmp, mode) as f:
+                    while True:
+                        chunk = r.read(1024 * 512)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        if on_bytes:
+                            on_bytes(len(chunk))
+            os.replace(tmp, dest)
+            return
+        except Exception:
+            if attempt == max_attempts:
+                raise
+            time.sleep(3)
 
 
 def ensure_model(model_dir, base_url, progress=None):

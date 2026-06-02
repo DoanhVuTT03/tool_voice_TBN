@@ -68,7 +68,17 @@ if ! done_stage model; then
   for f in config.json special_tokens.json tokenizer.tiktoken codec.pth model.pth; do
     if [ ! -s "$MODEL/$f" ]; then
       echo "downloading $f ..."
-      curl -fL --retry 3 -o "$MODEL/$f.part" "$MODEL_BASE_URL/$f"
+      # Resumable (-C -) + aggressive retry so a dropped connection on the big
+      # files recovers instead of failing the whole install.
+      for attempt in 1 2 3 4 5 6 7 8; do
+        if curl -fL -C - --retry 5 --retry-delay 3 --retry-all-errors \
+                --connect-timeout 30 -o "$MODEL/$f.part" "$MODEL_BASE_URL/$f"; then
+          break
+        fi
+        echo "  (retry $attempt: connection dropped, resuming...)"
+        sleep 3
+      done
+      [ -s "$MODEL/$f.part" ] || { echo "ERROR: failed to download $f"; exit 56; }
       mv "$MODEL/$f.part" "$MODEL/$f"
     fi
   done
