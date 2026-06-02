@@ -6,7 +6,7 @@
 ; downloads need no admin rights.
 
 #define AppName "Tool Voice"
-#define AppVer "1.0.0"
+#define AppVer "1.0.1"
 #define AppExe "ToolVoice.exe"
 #define Pub "Tool Voice"
 
